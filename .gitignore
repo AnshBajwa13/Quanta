@@ -1,0 +1,33 @@
+# Build
+build/
+out/
+cmake-build-*/
+
+# IDE
+.vscode/
+.idea/
+*.user
+*.suo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compilers
+compile_commands.json
+
+# Generated
+*.log
+*.tmp
+
+# Local configuration
+.env
+.env.*
+
+# Data
+data/raw/
+data/cache/
+
+# Profiling
+*.prof
+*.perf
