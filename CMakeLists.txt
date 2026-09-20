@@ -40,6 +40,7 @@ add_library(quant_core STATIC
     src/core/version.cpp
     src/execution/simulator_gateway.cpp
     src/execution/matching_engine.cpp
+    src/execution/simulator.cpp
 )
 
 target_include_directories(
@@ -222,4 +223,19 @@ target_link_libraries(
 add_test(
     NAME quant_matching_engine_tests
     COMMAND quant-matching-engine-tests
+)
+
+add_executable(quant-simulator-tests
+    tests/units/simulator_test.cpp
+)
+
+target_link_libraries(
+    quant-simulator-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_simulator_tests
+    COMMAND quant-simulator-tests
 )

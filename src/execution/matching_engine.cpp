@@ -18,7 +18,8 @@ bool MatchingEngine::match(const OrderRequest &order,
 
   switch (order.side) {
   case Side::Buy:
-    if (order.price.value < tick.ask_price.value) {
+    if (order.type == OrderType::Limit &&
+        order.price.value < tick.ask_price.value) {
       return false;
     }
 
@@ -27,13 +28,21 @@ bool MatchingEngine::match(const OrderRequest &order,
     break;
 
   case Side::Sell:
-    if (order.price.value > tick.bid_price.value) {
+    if (order.type == OrderType::Limit &&
+        order.price.value > tick.bid_price.value) {
       return false;
     }
 
     execution_price = tick.bid_price;
     available_quantity = tick.bid_quantity;
     break;
+
+  default:
+    return false;
+  }
+  if (order.time_in_force == TimeInForce::FOK &&
+      available_quantity.value < order.quantity.value) {
+    return false;
   }
 
   const auto fill_quantity =
