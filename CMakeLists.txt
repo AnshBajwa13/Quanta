@@ -38,9 +38,19 @@ endif()
 
 add_library(quant_core STATIC
     src/core/version.cpp
-    src/execution/simulator_gateway.cpp
+    src/market/market_data_dispatcher.cpp
+    src/market/replay_feed.cpp
+    src/strategy/strategy_engine.cpp
+    src/risk/kill_switch.cpp
+    src/risk/risk_manager.cpp
+    src/portfolio/portfolio_manager.cpp
     src/execution/matching_engine.cpp
     src/execution/simulator.cpp
+    src/execution/simulator_gateway.cpp
+    src/execution/order_manager.cpp
+    src/execution/order_router.cpp
+    src/adapters/upstox/upstox_market_data_feed.cpp
+    src/adapters/upstox/upstox_execution_gateway.cpp
 )
 
 target_include_directories(
@@ -238,4 +248,154 @@ target_link_libraries(
 add_test(
     NAME quant_simulator_tests
     COMMAND quant-simulator-tests
+)
+
+add_executable(quant-spsc-queue-tests
+    tests/units/spsc_queue_test.cpp
+)
+
+target_link_libraries(
+    quant-spsc-queue-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_spsc_queue_tests
+    COMMAND quant-spsc-queue-tests
+)
+
+add_executable(quant-order-book-tests
+    tests/units/order_book_test.cpp
+)
+
+target_link_libraries(
+    quant-order-book-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_order_book_tests
+    COMMAND quant-order-book-tests
+)
+
+add_executable(quant-market-data-tests
+    tests/units/market_data_test.cpp
+)
+
+target_link_libraries(
+    quant-market-data-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_market_data_tests
+    COMMAND quant-market-data-tests
+)
+
+add_executable(quant-replay-feed-tests
+    tests/units/replay_feed_test.cpp
+)
+
+target_link_libraries(
+    quant-replay-feed-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_replay_feed_tests
+    COMMAND quant-replay-feed-tests
+)
+
+add_executable(quant-strategy-tests
+    tests/units/strategy_test.cpp
+)
+
+target_link_libraries(
+    quant-strategy-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_strategy_tests
+    COMMAND quant-strategy-tests
+)
+
+add_executable(quant-risk-tests
+    tests/units/risk_test.cpp
+)
+
+target_link_libraries(
+    quant-risk-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_risk_tests
+    COMMAND quant-risk-tests
+)
+
+add_executable(quant-portfolio-tests
+    tests/units/portfolio_test.cpp
+)
+
+target_link_libraries(
+    quant-portfolio-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_portfolio_tests
+    COMMAND quant-portfolio-tests
+)
+
+add_executable(quant-order-manager-tests
+    tests/units/order_manager_test.cpp
+)
+
+target_link_libraries(
+    quant-order-manager-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_order_manager_tests
+    COMMAND quant-order-manager-tests
+)
+
+add_executable(quant-order-router-tests
+    tests/units/order_router_test.cpp
+)
+
+target_link_libraries(
+    quant-order-router-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_order_router_tests
+    COMMAND quant-order-router-tests
+)
+
+add_executable(quant-upstox-adapter-tests
+    tests/units/upstox_adapter_test.cpp
+)
+
+target_link_libraries(
+    quant-upstox-adapter-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_upstox_adapter_tests
+    COMMAND quant-upstox-adapter-tests
 )
