@@ -2,7 +2,30 @@
 
 namespace quant::execution {
 
+void OrderManager::reserve(std::size_t capacity) {
+  orders_.reserve(capacity);
+  order_index_.reserve(capacity);
+}
+
 void OrderManager::track_order(const OrderRequest &request, core::OrderId order_id) {
+  const auto it = order_index_.find(order_id.value);
+  if (it != order_index_.end()) {
+    auto &order = orders_[it->second];
+    order.request = request;
+    order.state = {
+        .order_id = order_id,
+        .status = OrderStatus::New,
+        .requested_quantity = request.quantity,
+        .filled_quantity = core::Quantity{0},
+        .average_fill_price = core::Price{0}};
+    if (!order.active) {
+      order.active = true;
+      ++active_orders_count_;
+    }
+    return;
+  }
+
+  const std::size_t index = orders_.size();
   ManagedOrder managed{
       .request = request,
       .state = {
@@ -13,69 +36,69 @@ void OrderManager::track_order(const OrderRequest &request, core::OrderId order_
           .average_fill_price = core::Price{0}},
       .active = true};
   orders_.push_back(managed);
+  order_index_[order_id.value] = index;
+  ++active_orders_count_;
 }
 
 void OrderManager::on_execution_report(const ExecutionReport &report) noexcept {
-  for (auto &order : orders_) {
-    if (order.state.order_id.value == report.order_id.value) {
-      order.state.status = report.status;
-      order.state.filled_quantity = report.cumulative_quantity;
-      order.state.average_fill_price = report.average_price;
+  const auto it = order_index_.find(report.order_id.value);
+  if (it != order_index_.end()) {
+    auto &order = orders_[it->second];
+    order.state.status = report.status;
+    order.state.filled_quantity = report.cumulative_quantity;
+    order.state.average_fill_price = report.average_price;
 
-      if (report.status == OrderStatus::Filled ||
-          report.status == OrderStatus::Cancelled ||
-          report.status == OrderStatus::Rejected ||
-          report.status == OrderStatus::Expired) {
-        order.active = false;
+    if (order.active && (report.status == OrderStatus::Filled ||
+                         report.status == OrderStatus::Cancelled ||
+                         report.status == OrderStatus::Rejected ||
+                         report.status == OrderStatus::Expired)) {
+      order.active = false;
+      if (active_orders_count_ > 0) {
+        --active_orders_count_;
       }
-      return;
     }
   }
 }
 
 void OrderManager::on_fill(const Fill &fill) noexcept {
-  for (auto &order : orders_) {
-    if (order.state.order_id.value == fill.order_id.value) {
-      order.state.filled_quantity.value += fill.quantity.value;
-      if (order.state.filled_quantity.value >= order.request.quantity.value) {
-        order.state.status = OrderStatus::Filled;
+  const auto it = order_index_.find(fill.order_id.value);
+  if (it != order_index_.end()) {
+    auto &order = orders_[it->second];
+    order.state.filled_quantity.value += fill.quantity.value;
+    if (order.state.filled_quantity.value >= order.request.quantity.value) {
+      order.state.status = OrderStatus::Filled;
+      if (order.active) {
         order.active = false;
-      } else {
-        order.state.status = OrderStatus::PartiallyFilled;
+        if (active_orders_count_ > 0) {
+          --active_orders_count_;
+        }
       }
-      return;
+    } else {
+      order.state.status = OrderStatus::PartiallyFilled;
     }
   }
 }
 
 bool OrderManager::get_order_state(core::OrderId order_id,
                                    OrderState &state) const noexcept {
-  for (const auto &order : orders_) {
-    if (order.state.order_id.value == order_id.value) {
-      state = order.state;
-      return true;
-    }
+  const auto it = order_index_.find(order_id.value);
+  if (it != order_index_.end()) {
+    state = orders_[it->second].state;
+    return true;
   }
   return false;
 }
 
 bool OrderManager::is_active(core::OrderId order_id) const noexcept {
-  for (const auto &order : orders_) {
-    if (order.state.order_id.value == order_id.value) {
-      return order.active;
-    }
+  const auto it = order_index_.find(order_id.value);
+  if (it != order_index_.end()) {
+    return orders_[it->second].active;
   }
   return false;
 }
 
 std::size_t OrderManager::active_order_count() const noexcept {
-  std::size_t count{0};
-  for (const auto &order : orders_) {
-    if (order.active) {
-      ++count;
-    }
-  }
-  return count;
+  return active_orders_count_;
 }
 
 } // namespace quant::execution

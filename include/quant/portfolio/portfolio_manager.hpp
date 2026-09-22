@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 #include "quant/core/ids.hpp"
@@ -19,6 +21,8 @@ public:
   explicit PortfolioManager(core::Price initial_cash = core::Price{0});
   ~PortfolioManager() = default;
 
+  void reserve(std::size_t capacity);
+
   void on_fill(core::InstrumentId instrument_id, execution::Side side,
                const execution::Fill &fill) noexcept;
 
@@ -33,6 +37,7 @@ public:
 private:
   Portfolio portfolio_{};
   std::vector<Position> positions_;
+  std::unordered_map<std::uint64_t, std::size_t> pos_index_;
 };
 
 } // namespace quant::portfolio

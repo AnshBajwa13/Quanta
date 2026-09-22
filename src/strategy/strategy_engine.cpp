@@ -4,9 +4,15 @@
 
 namespace quant::strategy {
 
+void StrategyEngine::reserve(std::size_t capacity) {
+  strategies_.reserve(capacity);
+}
+
 void StrategyEngine::register_strategy(IStrategy *strategy) {
   if (strategy != nullptr) {
-    strategies_.push_back(strategy);
+    if (std::find(strategies_.begin(), strategies_.end(), strategy) == strategies_.end()) {
+      strategies_.push_back(strategy);
+    }
   }
 }
 
@@ -21,33 +27,25 @@ void StrategyEngine::unregister_strategy(core::StrategyId strategy_id) {
 
 void StrategyEngine::on_market_tick(const market::MarketTick &tick) noexcept {
   for (auto *strategy : strategies_) {
-    if (strategy != nullptr) {
-      strategy->on_market_tick(tick);
-    }
+    strategy->on_market_tick(tick);
   }
 }
 
 void StrategyEngine::on_trade(const market::Trade &trade) noexcept {
   for (auto *strategy : strategies_) {
-    if (strategy != nullptr) {
-      strategy->on_trade(trade);
-    }
+    strategy->on_trade(trade);
   }
 }
 
 void StrategyEngine::on_order_state(const execution::OrderState &state) noexcept {
   for (auto *strategy : strategies_) {
-    if (strategy != nullptr) {
-      strategy->on_order_state(state);
-    }
+    strategy->on_order_state(state);
   }
 }
 
 void StrategyEngine::on_fill(const execution::Fill &fill) noexcept {
   for (auto *strategy : strategies_) {
-    if (strategy != nullptr) {
-      strategy->on_fill(fill);
-    }
+    strategy->on_fill(fill);
   }
 }
 

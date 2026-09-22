@@ -17,6 +17,8 @@ public:
   StrategyEngine() = default;
   ~StrategyEngine() = default;
 
+  void reserve(std::size_t capacity);
+
   void register_strategy(IStrategy *strategy);
   void unregister_strategy(core::StrategyId strategy_id);
 

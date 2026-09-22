@@ -4,9 +4,15 @@
 
 namespace quant::market {
 
+void MarketDataDispatcher::reserve(std::size_t capacity) {
+  subscribers_.reserve(capacity);
+}
+
 void MarketDataDispatcher::register_subscriber(IMarketDataSubscriber *subscriber) {
   if (subscriber != nullptr) {
-    subscribers_.push_back(subscriber);
+    if (std::find(subscribers_.begin(), subscribers_.end(), subscriber) == subscribers_.end()) {
+      subscribers_.push_back(subscriber);
+    }
   }
 }
 
@@ -18,25 +24,19 @@ void MarketDataDispatcher::unregister_subscriber(IMarketDataSubscriber *subscrib
 
 void MarketDataDispatcher::dispatch(const MarketTick &tick) noexcept {
   for (auto *subscriber : subscribers_) {
-    if (subscriber != nullptr) {
-      subscriber->on_market_tick(tick);
-    }
+    subscriber->on_market_tick(tick);
   }
 }
 
 void MarketDataDispatcher::dispatch(const Trade &trade) noexcept {
   for (auto *subscriber : subscribers_) {
-    if (subscriber != nullptr) {
-      subscriber->on_trade(trade);
-    }
+    subscriber->on_trade(trade);
   }
 }
 
 void MarketDataDispatcher::dispatch(const Level2Book &book) noexcept {
   for (auto *subscriber : subscribers_) {
-    if (subscriber != nullptr) {
-      subscriber->on_order_book(book);
-    }
+    subscriber->on_order_book(book);
   }
 }
 

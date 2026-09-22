@@ -37,7 +37,7 @@ bool ReplayFeed::has_next() const noexcept {
 }
 
 bool ReplayFeed::next_tick(MarketTick &tick) noexcept {
-  if (cursor_ < ticks_.size()) {
+  if (cursor_ < ticks_.size()) [[likely]] {
     tick = ticks_[cursor_++];
     return true;
   }
@@ -45,7 +45,7 @@ bool ReplayFeed::next_tick(MarketTick &tick) noexcept {
 }
 
 std::size_t ReplayFeed::remaining_ticks() const noexcept {
-  if (cursor_ >= ticks_.size()) {
+  if (cursor_ >= ticks_.size()) [[unlikely]] {
     return 0;
   }
   return ticks_.size() - cursor_;

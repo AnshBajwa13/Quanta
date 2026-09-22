@@ -5,14 +5,12 @@
 #include <cstddef>
 #include <new>
 #include <optional>
+#include <utility>
 
 namespace quant::core {
 
-#if defined(__cpp_lib_hardware_interference_size)
-using std::hardware_destructive_interference_size;
-#else
-constexpr std::size_t hardware_destructive_interference_size = 64;
-#endif
+// Standard cache line size across modern x86_64 / ARM64 architectures
+constexpr std::size_t CachelineSize = 64;
 
 /// Lock-free Single-Producer Single-Consumer (SPSC) ring buffer.
 /// Pre-allocated, zero heap allocations on hot path, cacheline-aligned to prevent false sharing.
@@ -43,6 +41,35 @@ public:
     return true;
   }
 
+  [[nodiscard]] bool try_push(T &&item) noexcept {
+    const auto current_tail = tail_.load(std::memory_order_relaxed);
+    if ((current_tail - cached_head_) >= Capacity) {
+      cached_head_ = head_.load(std::memory_order_acquire);
+      if ((current_tail - cached_head_) >= Capacity) {
+        return false;
+      }
+    }
+
+    buffer_[current_tail & Mask] = std::move(item);
+    tail_.store(current_tail + 1, std::memory_order_release);
+    return true;
+  }
+
+  template <typename... Args>
+  [[nodiscard]] bool emplace(Args &&...args) noexcept {
+    const auto current_tail = tail_.load(std::memory_order_relaxed);
+    if ((current_tail - cached_head_) >= Capacity) {
+      cached_head_ = head_.load(std::memory_order_acquire);
+      if ((current_tail - cached_head_) >= Capacity) {
+        return false;
+      }
+    }
+
+    buffer_[current_tail & Mask] = T(std::forward<Args>(args)...);
+    tail_.store(current_tail + 1, std::memory_order_release);
+    return true;
+  }
+
   [[nodiscard]] bool try_pop(T &item) noexcept {
     const auto current_head = head_.load(std::memory_order_relaxed);
     if (current_head == cached_tail_) {
@@ -52,9 +79,23 @@ public:
       }
     }
 
-    item = buffer_[current_head & Mask];
+    item = std::move(buffer_[current_head & Mask]);
     head_.store(current_head + 1, std::memory_order_release);
     return true;
+  }
+
+  [[nodiscard]] std::optional<T> try_pop() noexcept {
+    const auto current_head = head_.load(std::memory_order_relaxed);
+    if (current_head == cached_tail_) {
+      cached_tail_ = tail_.load(std::memory_order_acquire);
+      if (current_head == cached_tail_) {
+        return std::nullopt;
+      }
+    }
+
+    T item = std::move(buffer_[current_head & Mask]);
+    head_.store(current_head + 1, std::memory_order_release);
+    return item;
   }
 
   [[nodiscard]] bool empty() const noexcept {
@@ -74,13 +115,13 @@ public:
 private:
   static constexpr std::size_t Mask = Capacity - 1;
 
-  alignas(hardware_destructive_interference_size) std::atomic<std::size_t> tail_{0};
+  alignas(CachelineSize) std::atomic<std::size_t> tail_{0};
   std::size_t cached_head_{0};
 
-  alignas(hardware_destructive_interference_size) std::atomic<std::size_t> head_{0};
+  alignas(CachelineSize) std::atomic<std::size_t> head_{0};
   std::size_t cached_tail_{0};
 
-  alignas(hardware_destructive_interference_size) std::array<T, Capacity> buffer_{};
+  alignas(CachelineSize) std::array<T, Capacity> buffer_{};
 };
 
 } // namespace quant::core

@@ -21,6 +21,7 @@ if(MSVC)
     add_compile_options(
         /W4
         /permissive-
+        /O2
     )
 else()
     add_compile_options(
@@ -29,6 +30,7 @@ else()
         -Wpedantic
         -Wconversion
         -Wsign-conversion
+        -O3
     )
 endif()
 
@@ -383,6 +385,21 @@ target_link_libraries(
 add_test(
     NAME quant_order_router_tests
     COMMAND quant-order-router-tests
+)
+
+add_executable(quant-simulator-gateway-tests
+    tests/units/simulator_gateway_test.cpp
+)
+
+target_link_libraries(
+    quant-simulator-gateway-tests
+    PRIVATE
+        quant_core
+)
+
+add_test(
+    NAME quant_simulator_gateway_tests
+    COMMAND quant-simulator-gateway-tests
 )
 
 add_executable(quant-upstox-adapter-tests
